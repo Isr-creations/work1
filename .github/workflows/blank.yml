@@ -1,0 +1,34 @@
+name: Create Torrent from Link
+
+on:
+  workflow_dispatch:
+    inputs:
+      link:
+        description: "URL to download and convert to torrent"
+        required: true
+
+jobs:
+  create-torrent:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install aria2
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y aria2
+
+    - name: Download file and generate torrent
+      run: |
+        mkdir -p download
+        aria2c "${{ github.event.inputs.link }}" --dir=download --out=file
+        mkdir -p torrents
+        mktorrent -v -a udp://tracker.openbittorrent.com:80/announce download/file -o torrents/file.torrent
+
+    - name: Upload generated torrent
+      uses: actions/upload-artifact@v3
+      with:
+        name: torrent-file
+        path: torrents/file.torrent
